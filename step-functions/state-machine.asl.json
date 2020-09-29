@@ -17,31 +17,85 @@
           "Next": "GetCompanyB"
         }
       ],
-      "Default": "GetCompanyDefault"
+      "Default": "GetCompanyDefault",
+      "Catch": [ 
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyError",
+          "ResultPath": "$.error" 
+        }
+      ]
     },
     "GetCompanyA": {
       "Type": "Task",
       "Comment": "Get Information for Company A",
       "Resource": "${CompanyAArn}",
-      "Next": "SendNotification"
+      "Catch": [
+        {
+          "ErrorEquals": ["UnableToProcessEventError"],
+          "Next": "NotifyError",
+          "ResultPath": "$.error" 
+        }
+      ],
+      "Next": "GeneratePDF"
     },
     "GetCompanyB": {
       "Type": "Task",
       "Comment": "Get Information for Company b",
       "Resource": "${CompanyBArn}",
-      "Next": "SendNotification"
+      "Catch": [
+        {
+          "ErrorEquals": ["UnableToProcessEventError"],
+          "Next": "NotifyError",
+          "ResultPath": "$.error" 
+        }
+      ],
+      "Next": "GeneratePDF"
     },
     "GetCompanyDefault": {
       "Type": "Task",
       "Comment": "Get Information for Company Default",
       "Resource": "${CompanyDefaultArn}",
+      "Catch": [
+        {
+          "ErrorEquals": ["UnableToProcessEventError"],
+          "Next": "NotifyError",
+          "ResultPath": "$.error" 
+        }
+      ],
+      "Next": "GeneratePDF"
+    },
+    "GeneratePDF": { 
+      "Type": "Task",
+      "Comment": "Generate the PDF and send to s3",
+      "Resource": "${GeneratePDFArn}",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyError",
+          "ResultPath": "$.error" 
+        }
+      ],
       "Next": "SendNotification"
     },
-    "SendNotification": { 
-        "Type": "Task",
-        "Comment": "Send information back via a websocket",
-        "Resource": "${SendNotificationArn}",
-        "End": true
+    "NotifyError": { 
+      "Type": "Task",
+      "Comment": "Send information back via a websocket",
+      "Resource": "${SendErrorArn}",
+      "End": true
+    },
+    "SendNotification": {
+      "Type": "Task",
+      "Comment": "Send information back via a websocket",
+      "Resource": "${SendNotificationArn}",
+      "End": true,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyError",
+          "ResultPath": "$.error" 
+        }
+      ]
     }
   }
 }

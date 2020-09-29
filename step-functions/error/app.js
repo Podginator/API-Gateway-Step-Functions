@@ -9,6 +9,6 @@ const interceptor = aws4Interceptor({
 axios.interceptors.request.use(interceptor);
 
 exports.handler = async (event, context, callback) => {
-  const { url, clientId } = event
-  await axios.post(`${process.env.WEBSOCKET_URI}${clientId}`, { url } )
+  const { error, clientId } = event
+  await axios.post(`${process.env.WEBSOCKET_URI}${clientId}`, { error } )
 };

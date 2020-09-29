@@ -1,0 +1,16 @@
+{
+  "name": "on-connect",
+  "version": "1.0.0",
+  "description": "connect to Websockets on api gateway",
+  "main": "src/app.js",
+  "author": "Podginator",
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "^2.6.1",
+    "jsbarcode": "^3.11.0",
+    "jspdf": "^2.1.1"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.739.0"
+  }
+}

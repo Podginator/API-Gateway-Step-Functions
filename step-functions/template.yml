@@ -95,6 +95,8 @@ Resources:
             CompanyBArn: !GetAtt GetCompanyB.Arn
             CompanyDefaultArn: !GetAtt GetCompanyDefault.Arn
             SendNotificationArn: !GetAtt SendNotification.Arn
+            SendErrorArn: !GetAtt SendError.Arn
+            GeneratePDFArn: !GettAtt GeneratePDF.Arn
           Policies:
             - LambdaInvokePolicy:
                 FunctionName: !Ref GetCompanyA
@@ -103,7 +105,11 @@ Resources:
             - LambdaInvokePolicy:
                 FunctionName: !Ref GetCompanyDefault
             - LambdaInvokePolicy:
+                FunctionName: !Ref SendError
+            - LambdaInvokePolicy:
                 FunctionName: !Ref SendNotification
+            - LambdaInvokePolicy:
+                FunctionName: !Ref GeneratePDF
 
     # Lambda Defintion 
     GetCompanyA:
@@ -133,6 +139,27 @@ Resources:
           Runtime: nodejs12.x
           Handler: app.handler
           Role: !Sub ${DynamoDBCrudRole.Arn}
+    GeneratePDF:
+      Type: AWS::Serverless::Function
+      Properties:
+        Description: Get Generate PDF
+        CodeUri: generate/
+        MemorySize: 256
+        Runtime: nodejs12.x
+        Handler: app.handler
+        Role: !Sub ${DynamoDBCrudRole.Arn}
+    SendNotification: 
+        Type: AWS::Serverless::Function
+        Properties:
+          Description: Generate a PDF with the infromation from above
+          CodeUri: save/persist/
+          MemorySize: 256
+          Runtime: nodejs12.x
+          Handler: app.handler
+          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Environment: 
+            Variables: 
+                S3_BUCKET: !ImportValue !Ref PdfStorage
     SendNotification: 
         Type: AWS::Serverless::Function
         Properties:
@@ -145,6 +172,37 @@ Resources:
           Environment: 
             Variables: 
                 WEBSOCKET_URI: !ImportValue SendWebsocketMessageURI
+    SendError: 
+        Type: AWS::Serverless::Function
+        Properties:
+          Description: Get Information from Default
+          CodeUri: error/
+          MemorySize: 256
+          Runtime: nodejs12.x
+          Handler: app.handler
+          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Environment: 
+            Variables: 
+                WEBSOCKET_URI: !ImportValue SendWebsocketMessageURI
+                
+    # S3 Buckets
+
+    PdfStorage: 
+      Type: AWS::S3::Bucket
+      Properties: 
+        BucketName: websocket-podginator-pdf
+        LifecycleConfiguration:
+          Rules:
+            -
+              AbortIncompleteMultipartUpload:
+                DaysAfterInitiation: 1
+              NoncurrentVersionExpirationInDays: 1
+              Status: Enabled
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
 
     # IAM Roles
     ApiGatewayStepFunctionsRole:
