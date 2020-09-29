@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "pdf-websocket"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1jfev9reicy3x"
+s3_prefix = "pdf-websocket"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "TableName=\"websocket_table\""

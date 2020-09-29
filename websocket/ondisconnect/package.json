@@ -1,0 +1,12 @@
+{
+    "name": "on-disconnect",
+    "version": "1.0.0",
+    "description": "disconnect from Websockets on api gateway",
+    "main": "src/app.js",
+    "author": "Podginator",
+    "license": "MIT",
+    "dependencies": {},
+    "devDependencies": {
+      "aws-sdk": "^2.739.0"
+    }
+  }

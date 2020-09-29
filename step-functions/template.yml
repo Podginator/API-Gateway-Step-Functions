@@ -1,0 +1,219 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Step Function Generate PDF'
+
+Resources: 
+    # API Gateway (To Trigger Step Functions)
+    StepFunctionsAPI:
+        Type: "AWS::Serverless::Api"
+        Properties:
+            StageName: stepfunction
+            TracingEnabled: true
+            DefinitionBody:
+                swagger: "2.0"
+                info:
+                    version: "1.1"
+                    title: "StepFunctionsAPI"
+                basePath: "/"
+                schemes:
+                    - "https"
+                paths:
+                    /create:
+                        post:
+                          consumes:
+                            - "application/json"
+                          produces:
+                            - "application/json"
+                          responses:
+                            "200":
+                              description: "200 response"
+                              schema:
+                                $ref: "#/definitions/Empty"
+                              headers:
+                                Access-Control-Allow-Origin:
+                                  type: "string"
+                          x-amazon-apigateway-integration:
+                            credentials: !GetAtt ApiGatewayStepFunctionsRole.Arn
+                            uri: !Sub "arn:aws:apigateway:${AWS::Region}:states:action/StartExecution"
+                            responses:
+                              default:
+                                statusCode: "200"
+                                responseParameters:
+                                  method.response.header.Access-Control-Allow-Origin: "'*'"
+                            requestTemplates:
+                              application/json: !Sub |
+                                {
+                                "input": "$util.escapeJavaScript($input.json('$'))",
+                                "name": "$context.requestId",
+                                "stateMachineArn": "${GenerateBarcodeStepFunction}"
+                                }
+                            passthroughBehavior: "when_no_templates"
+                            httpMethod: "POST"
+                            type: "aws"
+                        options:
+                          consumes:
+                            - "application/json"
+                          produces:
+                            - "application/json"
+                          responses:
+                            "200":
+                              description: "200 response"
+                              schema:
+                                $ref: "#/definitions/Empty"
+                              headers:
+                                Access-Control-Allow-Origin:
+                                  type: "string"
+                                Access-Control-Allow-Methods:
+                                  type: "string"
+                                Access-Control-Allow-Headers:
+                                  type: "string"
+                          x-amazon-apigateway-integration:
+                            responses:
+                              default:
+                                statusCode: "200"
+                                responseParameters:
+                                  method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+                                  method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                                  method.response.header.Access-Control-Allow-Origin: "'*'"
+                            requestTemplates:
+                              application/json: "{\"statusCode\": 200}"
+                            passthroughBehavior: "when_no_match"
+                            type: "mock"
+                definitions:
+                    Empty:
+                        type: "object"
+                        title: "Empty Schema"
+
+    # Step functions
+    GenerateBarcodeStepFunction:
+        Type: "AWS::Serverless::StateMachine" # More info about State Machine Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-statemachine.html
+        Properties:
+          Name: !Ref AWS::StackName
+          DefinitionUri: state-machine.asl.json
+          DefinitionSubstitutions:
+            CompanyAArn: !GetAtt GetCompanyA.Arn
+            CompanyBArn: !GetAtt GetCompanyB.Arn
+            CompanyDefaultArn: !GetAtt GetCompanyDefault.Arn
+            SendNotificationArn: !GetAtt SendNotification.Arn
+          Policies:
+            - LambdaInvokePolicy:
+                FunctionName: !Ref GetCompanyA
+            - LambdaInvokePolicy:
+                FunctionName: !Ref GetCompanyB
+            - LambdaInvokePolicy:
+                FunctionName: !Ref GetCompanyDefault
+            - LambdaInvokePolicy:
+                FunctionName: !Ref SendNotification
+
+    # Lambda Defintion 
+    GetCompanyA:
+        Type: AWS::Serverless::Function
+        Properties:
+          Description: Get Information from Company A.
+          CodeUri: transform/CompanyA/
+          MemorySize: 256
+          Runtime: nodejs12.x
+          Handler: app.handler
+          Role: !Sub ${DynamoDBCrudRole.Arn}
+    GetCompanyB:
+        Type: AWS::Serverless::Function
+        Properties:
+          Description: Get Information from Company B.
+          CodeUri: transform/CompanyB/
+          MemorySize: 256
+          Runtime: nodejs12.x
+          Handler: app.handler
+          Role: !Sub ${DynamoDBCrudRole.Arn}
+    GetCompanyDefault:
+        Type: AWS::Serverless::Function
+        Properties:
+          Description: Get Information from Default
+          CodeUri: transform/Default/
+          MemorySize: 256
+          Runtime: nodejs12.x
+          Handler: app.handler
+          Role: !Sub ${DynamoDBCrudRole.Arn}
+    SendNotification: 
+        Type: AWS::Serverless::Function
+        Properties:
+          Description: Get Information from Default
+          CodeUri: save/persist/
+          MemorySize: 256
+          Runtime: nodejs12.x
+          Handler: app.handler
+          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Environment: 
+            Variables: 
+                WEBSOCKET_URI: !ImportValue SendWebsocketMessageURI
+
+    # IAM Roles
+    ApiGatewayStepFunctionsRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+          Path: !Join ["", ["/", !Ref "AWS::StackName", "/"]]
+          AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "AllowApiGatewayServiceToAssumeRole"
+                Effect: "Allow"
+                Action:
+                  - "sts:AssumeRole"
+                Principal:
+                  Service:
+                    - "apigateway.amazonaws.com"
+          Policies:
+            -   PolicyName: "CallStepFunctions"
+                PolicyDocument:
+                  Version: '2012-10-17'
+                  Statement:
+                    -
+                      Effect: "Allow"
+                      Action:
+                        - "states:StartExecution"
+                      Resource:
+                        - !Ref GenerateBarcodeStepFunction
+    
+    DynamoDBCrudRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+          Path: !Join ["", ["/", !Ref "AWS::StackName", "/"]]
+          ManagedPolicyArns:
+            - "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
+            - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+          AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "AllowLambdaServiceToAssumeRole"
+                Effect: "Allow"
+                Action:
+                  - "sts:AssumeRole"
+                Principal:
+                  Service:
+                    - "lambda.amazonaws.com"
+          Policies:
+          - PolicyName: "AllowStatesActions"
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: "Allow"
+                    Action:
+                        - 'states:SendTaskSuccess'
+                        - 'states:SendTaskFailure'
+                        - 'states:SendTaskHeartbeat'
+                    Resource:
+                        - "*"
+          - PolicyName: "ExecuteAPI"
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: "Allow"
+                    Action:
+                        - '*'
+                    Resource:
+                        - "*"
+    
+    
