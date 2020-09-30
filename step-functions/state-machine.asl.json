@@ -17,14 +17,7 @@
           "Next": "GetCompanyB"
         }
       ],
-      "Default": "GetCompanyDefault",
-      "Catch": [ 
-        {
-          "ErrorEquals": ["States.ALL"],
-          "Next": "NotifyError",
-          "ResultPath": "$.error" 
-        }
-      ]
+      "Default": "GetCompanyDefault"
     },
     "GetCompanyA": {
       "Type": "Task",

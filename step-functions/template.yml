@@ -96,7 +96,7 @@ Resources:
             CompanyDefaultArn: !GetAtt GetCompanyDefault.Arn
             SendNotificationArn: !GetAtt SendNotification.Arn
             SendErrorArn: !GetAtt SendError.Arn
-            GeneratePDFArn: !GettAtt GeneratePDF.Arn
+            GeneratePDFArn: !GetAtt GeneratePDF.Arn
           Policies:
             - LambdaInvokePolicy:
                 FunctionName: !Ref GetCompanyA
@@ -159,7 +159,7 @@ Resources:
           Role: !Sub ${DynamoDBCrudRole.Arn}
           Environment: 
             Variables: 
-                S3_BUCKET: !ImportValue !Ref PdfStorage
+                S3_BUCKET: !Ref PdfStorage
     SendNotification: 
         Type: AWS::Serverless::Function
         Properties:
