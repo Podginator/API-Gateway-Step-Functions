@@ -75,12 +75,24 @@ Resources:
             AttributeDefinitions:
             - AttributeName: "connectionId"
               AttributeType: "S"
+            - AttributeName: "clientId"
+              AttributeType: "S"
             KeySchema:
             - AttributeName: "connectionId"
               KeyType: "HASH"
             ProvisionedThroughput:
                 ReadCapacityUnits: 5
                 WriteCapacityUnits: 5
+            GlobalSecondaryIndexes: 
+                - IndexName: "clientIdIdx"
+                  KeySchema: 
+                    - "AttributeName" : "clientId"
+                      "KeyType" : "HASH"
+                  Projection: 
+                    ProjectionType: "ALL"
+                  ProvisionedThroughput:
+                    ReadCapacityUnits: 5
+                    WriteCapacityUnits: 5
             SSESpecification:
                 SSEEnabled: True
             TimeToLiveSpecification:
@@ -151,3 +163,16 @@ Outputs:
         Value: !Join ['', ['https://', !Ref WebSocketGateway, '.execute-api.',!Ref 'AWS::Region','.amazonaws.com/',!Ref 'Stage', '/@connections/']]
         Export: 
             Name: "SendWebsocketMessageURI"
+
+    TableName: 
+        Description: "The Table name of the table for the Websocket Connections"
+        Value: !Ref ConnectionsTable.Name
+        Export: 
+            Name: "PDFWebsocketTableName"
+    TableARN: 
+        Description: "The Table ARN of the table for the Websocket Connections"
+        Value: !Ref ConnectionsTable.Arn
+        Export: 
+            Name: "PDFWebsocketTableArn"
+
+    

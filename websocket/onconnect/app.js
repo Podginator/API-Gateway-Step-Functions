@@ -4,11 +4,13 @@ const ddb = new AWS.DynamoDB.DocumentClient({ apiVersion: '2012-08-10', region: 
 
 exports.handler = async event => {
   const ttl = Math.floor((new Date()).getTime() / 1000) + 3600;
+  const { clientId } = event.queryStringParameters;
   const putParams = {
     TableName: process.env.TABLE_NAME,
     Item: {
       connectionId: event.requestContext.connectionId,
-      ttl
+      ttl,
+      clientId  
     }
   };
 

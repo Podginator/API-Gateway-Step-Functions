@@ -24,7 +24,7 @@ const getBarcodeImage = (text) => {
 exports.handler = async (event, context, callback) => {
     const { text, clientId } = event
 
-    const barcodeImage = await getBarcodeImage(text);
+    const barcodeImage = await getBarcodeImage(text + clientId);
     await s3.putObject({ 
         Bucket: process.env.S3_BUCKET,
         Key: `${clientId}_pdf.png`,
@@ -32,5 +32,5 @@ exports.handler = async (event, context, callback) => {
         Body: barcodeImage
     }).promise() 
 
-    callback(null, { clientId, url: `https://${process.env.S3_BUCKET}.s3.amazonaws.com/${clientId}_pdf.pdf` });
+    callback(null, { clientId, url: `https://${process.env.S3_BUCKET}.s3.amazonaws.com/${clientId}_pdf.png` });
 };

@@ -1,6 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'Step Function Generate PDF'
+Description: >
+  Using API Gateway to trigger step functions that 
+  are used to generate a PDF and notify users. 
 
 Resources: 
     # API Gateway (To Trigger Step Functions)
@@ -86,7 +88,7 @@ Resources:
 
     # Step functions
     GenerateBarcodeStepFunction:
-        Type: "AWS::Serverless::StateMachine" # More info about State Machine Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-statemachine.html
+        Type: "AWS::Serverless::StateMachine" 
         Properties:
           Name: !Ref AWS::StackName
           DefinitionUri: state-machine.asl.json
@@ -120,7 +122,7 @@ Resources:
           MemorySize: 256
           Runtime: nodejs12.x
           Handler: app.handler
-          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Role: !Sub ${LambdaExecutionRole.Arn}
     GetCompanyB:
         Type: AWS::Serverless::Function
         Properties:
@@ -129,7 +131,7 @@ Resources:
           MemorySize: 256
           Runtime: nodejs12.x
           Handler: app.handler
-          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Role: !Sub ${LambdaExecutionRole.Arn}
     GetCompanyDefault:
         Type: AWS::Serverless::Function
         Properties:
@@ -138,7 +140,7 @@ Resources:
           MemorySize: 256
           Runtime: nodejs12.x
           Handler: app.handler
-          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Role: !Sub ${LambdaExecutionRole.Arn}
     GeneratePDF:
       Type: AWS::Serverless::Function
       Properties:
@@ -147,7 +149,7 @@ Resources:
         MemorySize: 256
         Runtime: nodejs12.x
         Handler: app.handler
-        Role: !Sub ${DynamoDBCrudRole.Arn}
+        Role: !Sub ${LambdaExecutionRole.Arn}
     SendNotification: 
         Type: AWS::Serverless::Function
         Properties:
@@ -156,22 +158,11 @@ Resources:
           MemorySize: 256
           Runtime: nodejs12.x
           Handler: app.handler
-          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Role: !Sub ${LambdaExecutionRole.Arn}
           Environment: 
             Variables: 
-                S3_BUCKET: !Ref PdfStorage
-    SendNotification: 
-        Type: AWS::Serverless::Function
-        Properties:
-          Description: Get Information from Default
-          CodeUri: save/persist/
-          MemorySize: 256
-          Runtime: nodejs12.x
-          Handler: app.handler
-          Role: !Sub ${DynamoDBCrudRole.Arn}
-          Environment: 
-            Variables: 
-                WEBSOCKET_URI: !ImportValue SendWebsocketMessageURI
+              WEBSOCKET_URI: !ImportValue SendWebsocketMessageURI
+              TABLE_NAME: !ImportValue PDFWebsocketTableName
     SendError: 
         Type: AWS::Serverless::Function
         Properties:
@@ -180,10 +171,11 @@ Resources:
           MemorySize: 256
           Runtime: nodejs12.x
           Handler: app.handler
-          Role: !Sub ${DynamoDBCrudRole.Arn}
+          Role: !Sub ${LambdaExecutionRole.Arn}
           Environment: 
             Variables: 
                 WEBSOCKET_URI: !ImportValue SendWebsocketMessageURI
+                TABLE_NAME: !ImportValue PDFWebsocketTableName
                 
     # S3 Buckets
 
@@ -232,7 +224,7 @@ Resources:
                       Resource:
                         - !Ref GenerateBarcodeStepFunction
     
-    DynamoDBCrudRole:
+    LambdaExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:
           Path: !Join ["", ["/", !Ref "AWS::StackName", "/"]]
@@ -270,8 +262,18 @@ Resources:
                 -
                     Effect: "Allow"
                     Action:
-                        - '*'
+                        - "execute-api:Invoke"
                     Resource:
-                        - "*"
+                        - !GetAtt StepFunctionsAPI.Arn
+          - PolicyName: "DynamoDBCrudPolicy"
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: "Allow"
+                    Action:
+                        - "DynamoDB:query"
+                    Resource:
+                        - !ImportValue PDFWebsocketTableArn
     
     

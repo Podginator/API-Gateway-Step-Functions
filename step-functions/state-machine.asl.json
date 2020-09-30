@@ -25,7 +25,7 @@
       "Resource": "${CompanyAArn}",
       "Catch": [
         {
-          "ErrorEquals": ["UnableToProcessEventError"],
+          "ErrorEquals": ["States.ALL"],
           "Next": "NotifyError",
           "ResultPath": "$.error" 
         }
@@ -38,7 +38,7 @@
       "Resource": "${CompanyBArn}",
       "Catch": [
         {
-          "ErrorEquals": ["UnableToProcessEventError"],
+          "ErrorEquals": ["States.ALL"],
           "Next": "NotifyError",
           "ResultPath": "$.error" 
         }
@@ -51,7 +51,7 @@
       "Resource": "${CompanyDefaultArn}",
       "Catch": [
         {
-          "ErrorEquals": ["UnableToProcessEventError"],
+          "ErrorEquals": ["States.ALL"],
           "Next": "NotifyError",
           "ResultPath": "$.error" 
         }
