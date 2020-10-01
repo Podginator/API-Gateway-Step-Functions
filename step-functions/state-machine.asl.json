@@ -9,7 +9,7 @@
         {
           "Variable": "$.provider",
           "StringEquals": "A",
-          "Next": "GetCompanyA"
+          "Next": "GetCompanyAParallel"
         },
         {
           "Variable": "$.provider",
@@ -19,18 +19,56 @@
       ],
       "Default": "GetCompanyDefault"
     },
-    "GetCompanyA": {
-      "Type": "Task",
-      "Comment": "Get Information for Company A",
-      "Resource": "${CompanyAArn}",
-      "Catch": [
+    "GetCompanyAParallel": {
+      "Type": "Parallel",
+      "Comment": "Get information in parallel for Company A",
+      "Branches": [
         {
-          "ErrorEquals": ["States.ALL"],
-          "Next": "NotifyError",
-          "ResultPath": "$.error" 
+          "StartsAt": "GetCompanyA",
+          "States": {
+            "GetCompanyA": {
+              "Type": "Task",
+              "Comment": "Get Information for Company A",
+              "Resource": "${CompanyAArn}",
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "Next": "NotifyError",
+                  "ResultPath": "$.error"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartsAt": "GetCompanyATwo",
+          "States": {
+            "GetCompanyATwo": {
+              "Type": "Task",
+              "Comment": "Get Information for Company A Second",
+              "Resource": "${CompanyA2Arn}",
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "Next": "NotifyError",
+                  "ResultPath": "$.error"
+                }
+              ],
+              "End": true
+            }
+          }
         }
-      ],
-      "Next": "GeneratePDF"
+      ]
+    },
+    "CombineCompanyA": { 
+      "Type": "Pass",
+        "Parameters": {
+          "clientId": "$[0].clientId",
+          "provider": "$[0].provider",
+          "text": "States.Format('{} {}', $[0].text, $[1].text)"
+        },
+        "Next": "GeneratePDF"
     },
     "GetCompanyB": {
       "Type": "Task",
@@ -40,7 +78,7 @@
         {
           "ErrorEquals": ["States.ALL"],
           "Next": "NotifyError",
-          "ResultPath": "$.error" 
+          "ResultPath": "$.error"
         }
       ],
       "Next": "GeneratePDF"
@@ -53,12 +91,12 @@
         {
           "ErrorEquals": ["States.ALL"],
           "Next": "NotifyError",
-          "ResultPath": "$.error" 
+          "ResultPath": "$.error"
         }
       ],
       "Next": "GeneratePDF"
     },
-    "GeneratePDF": { 
+    "GeneratePDF": {
       "Type": "Task",
       "Comment": "Generate the PDF and send to s3",
       "Resource": "${GeneratePDFArn}",
@@ -66,12 +104,12 @@
         {
           "ErrorEquals": ["States.ALL"],
           "Next": "NotifyError",
-          "ResultPath": "$.error" 
+          "ResultPath": "$.error"
         }
       ],
       "Next": "SendNotification"
     },
-    "NotifyError": { 
+    "NotifyError": {
       "Type": "Task",
       "Comment": "Send information back via a websocket",
       "Resource": "${SendErrorArn}",
@@ -86,7 +124,7 @@
         {
           "ErrorEquals": ["States.ALL"],
           "Next": "NotifyError",
-          "ResultPath": "$.error" 
+          "ResultPath": "$.error"
         }
       ]
     }

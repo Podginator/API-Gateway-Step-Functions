@@ -94,6 +94,7 @@ Resources:
           DefinitionUri: state-machine.asl.json
           DefinitionSubstitutions:
             CompanyAArn: !GetAtt GetCompanyA.Arn
+            CompanyA2ARN: !GetAtt GetCompanyAParallel.Arn
             CompanyBArn: !GetAtt GetCompanyB.Arn
             CompanyDefaultArn: !GetAtt GetCompanyDefault.Arn
             SendNotificationArn: !GetAtt SendNotification.Arn
@@ -112,6 +113,8 @@ Resources:
                 FunctionName: !Ref SendNotification
             - LambdaInvokePolicy:
                 FunctionName: !Ref GeneratePDF
+            - LambdaInvokePolicy:
+                FunctionName: !Ref GetCompanyAParallel
 
     # Lambda Defintion 
     GetCompanyA:
@@ -119,6 +122,15 @@ Resources:
         Properties:
           Description: Get Information from Company A.
           CodeUri: transform/CompanyA/
+          MemorySize: 256
+          Runtime: nodejs12.x
+          Handler: app.handler
+          Role: !Sub ${LambdaExecutionRole.Arn}
+    GetCompanyAParallel:
+        Type: AWS::Serverless::Function
+        Properties:
+          Description: Get Information from Company A.
+          CodeUri: transform/CompanyAParallel/
           MemorySize: 256
           Runtime: nodejs12.x
           Handler: app.handler
