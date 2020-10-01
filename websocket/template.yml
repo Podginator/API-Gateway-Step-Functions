@@ -166,12 +166,12 @@ Outputs:
 
     TableName: 
         Description: "The Table name of the table for the Websocket Connections"
-        Value: !Ref ConnectionsTable.Name
+        Value: !Ref TableName
         Export: 
             Name: "PDFWebsocketTableName"
     TableARN: 
         Description: "The Table ARN of the table for the Websocket Connections"
-        Value: !Ref ConnectionsTable.Arn
+        Value: !GetAtt ConnectionsTable.Arn
         Export: 
             Name: "PDFWebsocketTableArn"
 

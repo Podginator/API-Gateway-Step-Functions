@@ -94,7 +94,7 @@ Resources:
           DefinitionUri: state-machine.asl.json
           DefinitionSubstitutions:
             CompanyAArn: !GetAtt GetCompanyA.Arn
-            CompanyA2ARN: !GetAtt GetCompanyAParallel.Arn
+            CompanyA2Arn: !GetAtt GetCompanyAParallel.Arn
             CompanyBArn: !GetAtt GetCompanyB.Arn
             CompanyDefaultArn: !GetAtt GetCompanyDefault.Arn
             SendNotificationArn: !GetAtt SendNotification.Arn
@@ -162,6 +162,9 @@ Resources:
         Runtime: nodejs12.x
         Handler: app.handler
         Role: !Sub ${LambdaExecutionRole.Arn}
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref PdfStorage
     SendNotification: 
         Type: AWS::Serverless::Function
         Properties:
@@ -276,7 +279,7 @@ Resources:
                     Action:
                         - "execute-api:Invoke"
                     Resource:
-                        - !GetAtt StepFunctionsAPI.Arn
+                        - '*'
           - PolicyName: "DynamoDBCrudPolicy"
             PolicyDocument:
                 Version: '2012-10-17'

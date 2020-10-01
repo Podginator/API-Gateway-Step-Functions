@@ -24,49 +24,43 @@
       "Comment": "Get information in parallel for Company A",
       "Branches": [
         {
-          "StartsAt": "GetCompanyA",
+          "StartAt": "GetCompanyA",
           "States": {
             "GetCompanyA": {
               "Type": "Task",
               "Comment": "Get Information for Company A",
               "Resource": "${CompanyAArn}",
-              "Catch": [
-                {
-                  "ErrorEquals": ["States.ALL"],
-                  "Next": "NotifyError",
-                  "ResultPath": "$.error"
-                }
-              ],
               "End": true
             }
           }
         },
         {
-          "StartsAt": "GetCompanyATwo",
+          "StartAt": "GetCompanyATwo",
           "States": {
             "GetCompanyATwo": {
               "Type": "Task",
               "Comment": "Get Information for Company A Second",
               "Resource": "${CompanyA2Arn}",
-              "Catch": [
-                {
-                  "ErrorEquals": ["States.ALL"],
-                  "Next": "NotifyError",
-                  "ResultPath": "$.error"
-                }
-              ],
               "End": true
             }
           }
+        }
+      ],
+      "Next": "CombineCompanyA",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyError",
+          "ResultPath": "$.error"
         }
       ]
     },
     "CombineCompanyA": { 
       "Type": "Pass",
         "Parameters": {
-          "clientId": "$[0].clientId",
-          "provider": "$[0].provider",
-          "text": "States.Format('{} {}', $[0].text, $[1].text)"
+          "clientId.$": "$[0].clientId",
+          "provider.$": "$[0].provider",
+          "text.$": "States.Format('{} {}', $[0].text, $[1].text)"
         },
         "Next": "GeneratePDF"
     },
